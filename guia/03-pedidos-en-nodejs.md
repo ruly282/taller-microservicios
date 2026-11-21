@@ -4,7 +4,11 @@
 
 Si no terminaste el bloque 2: `./punto-de-control.sh 3`
 
-## Paso 1. Ten todo corriendo
+En el proyector se hace la llamada al menú y la validación. Luego te toca preguntarle al menú por cada producto, y al final se hace la transacción en el proyector.
+
+## En el proyector
+
+### Paso 1. Ten todo corriendo
 
 Vas a necesitar tres cosas arriba, cada una en su terminal:
 
@@ -14,12 +18,12 @@ Vas a necesitar tres cosas arriba, cada una en su terminal:
 
 Pedidos debe decir `Base de datos de pedidos lista`. Con `npm run dev`, cada vez que guardas un archivo el servicio se reinicia solo.
 
-## Paso 2. Revisa lo que ya viene hecho
+### Paso 2. Revisa lo que ya viene hecho
 
 - `pedidos/src/db.ts` crea la base `PedidosDb` y sus dos tablas con T-SQL. Fíjate en `CHECK (Cantidad > 0)`: la base no acepta cantidades en 0.
 - `pedidos/src/index.ts` ya trae `GET /pedidos` y `GET /pedidos/:id`.
 
-## Paso 3. Pregúntale al menú
+### Paso 3. Pregúntale al menú
 
 En `pedidos/src/menu.ts`, borra la línea del `throw` y en su lugar escribe:
 
@@ -34,7 +38,7 @@ En `pedidos/src/menu.ts`, borra la línea del `throw` y en su lugar escribe:
 
 Así se hablan dos microservicios: uno le hace una petición HTTP al otro, aunque estén hechos en lenguajes distintos.
 
-## Paso 4. Recibe pedidos
+### Paso 4. Recibe el pedido y valídalo
 
 En `pedidos/src/index.ts`, agrega este `import` junto a los otros:
 
@@ -66,7 +70,34 @@ app.post("/pedidos", async (req, res) => {
 
 Cada parte que sigue va donde dice `// Aquí van las partes 2, 3 y 4`, una debajo de la otra.
 
-**Parte 2.** Preguntarle al menú por cada producto:
+## Tu turno
+
+### Reto. Pregúntale al menú por cada producto
+
+Es la parte 2. Por cada producto que trae el pedido, pregúntale al menú con `buscarProducto(item.id)`:
+
+- Si el menú no responde, `buscarProducto` lanza un error: responde 503 con `{ error: "El servicio de menú no está disponible" }`.
+- Si el producto no existe, regresa `null`: responde 400 y di cuál producto no existe.
+- Si existe, guárdalo junto con su cantidad en `lineas`. Esa lista se usa después para el total y para guardar el pedido.
+
+Empieza con esta línea:
+
+```ts
+  const lineas: { producto: Producto; cantidad: number }[] = [];
+```
+
+Pistas:
+
+- Recorre los productos con `for (const item of productos)`.
+- Pon el `await buscarProducto(item.id)` dentro de un `try { ... } catch { ... }`. El 503 va en el `catch`.
+- Ojo: si declaras `producto` adentro del `try`, afuera no existe. Declárala antes: `let producto: Producto | null;`
+- Después de responder con `res.status(...).json(...)`, pon `return;` para que la ruta no siga.
+- Para guardar en la lista: `lineas.push({ producto, cantidad: item.cantidad })`.
+
+Para probarlo, pon por mientras `res.json(lineas);` al final de tu parte y manda **Hacer un pedido**: deben salir el café y el burrito con su precio. Prueba también **Producto que no existe en el menú**, que debe dar 400. Luego borra ese `res.json(lineas);`.
+
+<details>
+<summary>Ver la solución (primero inténtalo)</summary>
 
 ```ts
   // 2. Preguntarle al menú por cada producto: un microservicio llamando a otro por REST
@@ -90,14 +121,18 @@ Cada parte que sigue va donde dice `// Aquí van las partes 2, 3 y 4`, una debaj
 
 El precio se toma del menú, no de lo que manda el cliente. Si no, cualquiera podría pedir un burrito a 1 peso.
 
-**Parte 3.** Calcular el total:
+</details>
+
+## Otra vez en el proyector
+
+### Paso 5. Calcula el total
 
 ```ts
   // 3. Calcular el total con los precios que dio el menú
   const total = lineas.reduce((suma, l) => suma + l.producto.precio * l.cantidad, 0);
 ```
 
-**Parte 4.** Guardar el pedido y su detalle en una transacción:
+### Paso 6. Guarda el pedido con una transacción
 
 ```ts
   // 4. Guardar el pedido y su detalle en UNA transacción: se guarda todo o nada

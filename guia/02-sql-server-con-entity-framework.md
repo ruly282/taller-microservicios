@@ -4,7 +4,11 @@
 
 Si no terminaste el bloque 1: `./punto-de-control.sh 2`
 
-## Paso 1. Levanta SQL Server
+En el proyector se levanta la base y se pasa a SQL Server la ruta de todos los productos. Las otras tres te tocan a ti.
+
+## En el proyector
+
+### Paso 1. Levanta SQL Server
 
 En una terminal nueva, en la carpeta principal del proyecto:
 
@@ -15,13 +19,13 @@ docker compose ps
 
 Repite `docker compose ps` hasta que diga **healthy**, unos 30 segundos. SQL Server corre en un contenedor de Docker: no se instaló nada.
 
-## Paso 2. Revisa `menu/MenuDb.cs` (ya viene hecho)
+### Paso 2. Revisa `menu/MenuDb.cs` (ya viene hecho)
 
 - `MenuDb` hereda de `DbContext`: representa la base de datos del menú.
 - `DbSet<Producto> Productos` es la tabla `Productos`.
 - `HasData` mete los 4 productos de inicio la primera vez que se crea la tabla.
 
-## Paso 3. Ajusta `menu/Producto.cs`
+### Paso 3. Ajusta `menu/Producto.cs`
 
 Déjalo así:
 
@@ -46,7 +50,7 @@ public class Producto
 
 Sin `[Precision]`, Entity Framework no sabe cuántos decimales guardar y te lo avisa con un warning.
 
-## Paso 4. Conecta el menú con la base en `menu/Program.cs`
+### Paso 4. Conecta el menú con la base en `menu/Program.cs`
 
 Arriba, junto al otro `using`:
 
@@ -71,12 +75,39 @@ await BaseDeDatos.PrepararAsync(app);
 
 Eso crea la base y la tabla si no existen. `BaseDeDatos.cs` ya viene hecho.
 
-Ahora borra la lista `productos` y cambia las cuatro rutas por estas:
+### Paso 5. Todos los productos, ahora desde la base
+
+Cambia solo la ruta de todos los productos por esta:
 
 ```csharp
 app.MapGet("/productos", async (MenuDb db) =>
     await db.Productos.OrderBy(p => p.Id).ToListAsync());
+```
 
+`MenuDb db` te llega sin que lo crees: ASP.NET Core lo hace por ti. A eso se le llama inyección de dependencias.
+
+Corre `dotnet run` y manda **Todos los productos**. En la terminal vas a ver el SQL que Entity Framework escribe por ti: `CREATE TABLE`, `SELECT`, `INSERT`...
+
+## Tu turno
+
+Pasa las otras tres rutas a la base:
+
+- **Un producto:** en lugar de buscarlo en la lista, búscalo con `await db.Productos.FindAsync(id)`.
+- **Agregar:** la misma validación de antes. Luego `db.Productos.Add(producto)` y `await db.SaveChangesAsync()`.
+- **Borrar:** búscalo con `FindAsync`, y luego `db.Productos.Remove(producto)` y `await db.SaveChangesAsync()`.
+
+Cuando termines, borra la lista `productos`: ya no se usa.
+
+Pistas:
+
+- Cada ruta recibe `MenuDb db` como un parámetro más y se vuelve `async`, igual que la del paso 5.
+- `Add` y `Remove` solo preparan el cambio. `SaveChangesAsync` es lo que lo manda a SQL Server.
+- Al agregar, pon `producto.Id = 0` antes del `Add`: el `Id` lo pone SQL Server.
+
+<details>
+<summary>Ver la solución (primero inténtalo)</summary>
+
+```csharp
 app.MapGet("/productos/{id:int}", async (int id, MenuDb db) =>
     await db.Productos.FindAsync(id) is Producto producto
         ? Results.Ok(producto)
@@ -107,11 +138,10 @@ app.MapDelete("/productos/{id:int}", async (int id, MenuDb db) =>
 });
 ```
 
-- `MenuDb db` te llega en cada ruta sin que lo crees: ASP.NET Core lo hace por ti. A eso se le llama inyección de dependencias.
-- `Add` y `Remove` solo preparan el cambio. `SaveChangesAsync` es lo que lo manda a SQL Server.
+</details>
 
 ## Pruébalo
 
-`dotnet run` y manda las peticiones de `menu/menu.http`. En la terminal vas a ver el SQL que Entity Framework escribe por ti: `CREATE TABLE`, `SELECT`, `INSERT`...
+Reinicia el servicio y manda todas las peticiones de `menu/menu.http`.
 
 **Para pensar:** agrega un producto, detén el servicio y vuelve a correrlo. Ahora sí sigue ahí.

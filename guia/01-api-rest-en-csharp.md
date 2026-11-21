@@ -9,7 +9,11 @@
 | POST | `/productos` | Agrega uno (201), o 400 si los datos vienen mal |
 | DELETE | `/productos/{id}` | Lo borra (204), o 404 si no existe |
 
-## Paso 1. Arranca el servicio
+Las dos primeras las hacemos juntos en el proyector. Las otras dos te tocan a ti.
+
+## En el proyector
+
+### Paso 1. Arranca el servicio
 
 ```bash
 cd menu
@@ -20,7 +24,7 @@ Debe decir `Now listening on: http://localhost:5000`. Abre `menu/menu.http` y ma
 
 Cada vez que cambies el código: **Ctrl+C** y otra vez `dotnet run`.
 
-## Paso 2. Todos los productos
+### Paso 2. Todos los productos
 
 Abre `menu/Program.cs`. Ya trae una lista con 4 productos de ejemplo. Abajo de `app.MapGet("/", ...)` agrega:
 
@@ -30,7 +34,7 @@ app.MapGet("/productos", () => productos);
 
 ASP.NET Core convierte la lista a JSON por ti.
 
-## Paso 3. Un producto
+### Paso 3. Un producto
 
 ```csharp
 app.MapGet("/productos/{id:int}", (int id) =>
@@ -42,7 +46,28 @@ app.MapGet("/productos/{id:int}", (int id) =>
 - `{id:int}` solo acepta números.
 - `Results.Ok` responde 200 y `Results.NotFound` responde 404.
 
-## Paso 4. Agregar un producto
+## Tu turno
+
+### Reto 1. Agregar un producto
+
+`POST /productos` recibe un producto en JSON:
+
+- Si el nombre viene vacío, responde 400 con un mensaje que diga por qué.
+- Si el precio es 0 o menos, también responde 400.
+- Si todo está bien, le pone un `Id` nuevo, lo agrega a la lista y responde 201 con el producto.
+
+Pistas:
+
+- Va igual que los GET, pero con `app.MapPost`. El producto te llega como parámetro, `(Producto producto) => { ... }`, y ASP.NET Core lo arma solo con el JSON.
+- Para revisar el nombre: `string.IsNullOrWhiteSpace(producto.Nombre)`.
+- Para el 400: `Results.BadRequest(new { error = "..." })`.
+- El `Id` nuevo es el más grande de la lista más 1: `productos.Max(p => p.Id) + 1`. Ojo: si la lista está vacía, `Max` truena.
+- Para el 201: `Results.Created(ruta, producto)`, donde la ruta es la del producto nuevo, por ejemplo `/productos/5`.
+
+Pruébalo con **Agregar un producto** y **Producto sin nombre** de `menu.http`.
+
+<details>
+<summary>Ver la solución (primero inténtalo)</summary>
 
 ```csharp
 app.MapPost("/productos", (Producto producto) =>
@@ -58,11 +83,25 @@ app.MapPost("/productos", (Producto producto) =>
 });
 ```
 
-- El producto llega en el cuerpo de la petición, en JSON, y ASP.NET Core lo convierte a un `Producto`.
-- Si los datos vienen mal se responde 400 y se explica por qué. Nunca confíes en lo que manda el cliente.
-- `Results.Created` responde 201 y dice en qué ruta quedó el producto nuevo.
+Si los datos vienen mal se responde 400 y se explica por qué. Nunca confíes en lo que manda el cliente.
 
-## Paso 5. Borrar un producto
+</details>
+
+### Reto 2. Borrar un producto
+
+`DELETE /productos/{id}`:
+
+- Si no existe, responde 404.
+- Si existe, lo quita de la lista y responde 204.
+
+Pistas:
+
+- Usa `app.MapDelete` y busca el producto como en el paso 3, con `FirstOrDefault`.
+- Para quitarlo de la lista: `productos.Remove(producto)`.
+- Para el 204: `Results.NoContent()`. Quiere decir "listo, y no hay nada que regresarte".
+
+<details>
+<summary>Ver la solución (primero inténtalo)</summary>
 
 ```csharp
 app.MapDelete("/productos/{id:int}", (int id) =>
@@ -76,7 +115,7 @@ app.MapDelete("/productos/{id:int}", (int id) =>
 });
 ```
 
-204 quiere decir "listo, y no hay nada que regresarte".
+</details>
 
 ## Pruébalo
 

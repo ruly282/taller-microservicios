@@ -10,6 +10,12 @@
 | [4. Docker](04-docker.md) | 12:20 | Cada servicio en su contenedor y todo con un solo comando |
 | [Extra: RabbitMQ](05-extra-rabbitmq.md) | En tu casa | Pedidos le avisa a cocina con mensajes |
 
+## Cómo va cada bloque
+
+1. **En el proyector:** se explica el tema y se programa la primera parte. Tú la vas escribiendo al mismo tiempo.
+2. **Tu turno:** sigue una parte que haces tú solo. La guía te dice qué debe hacer y te da pistas, pero no el código. La solución viene escondida: no la abras hasta intentarlo.
+3. **Se revisa:** se resuelve en el proyector y todos lo prueban.
+
 ## Si te atoras
 
 Al inicio de cada bloque puedes brincar a una versión donde todo lo anterior ya funciona:
