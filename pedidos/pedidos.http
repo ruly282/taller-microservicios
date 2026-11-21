@@ -1,0 +1,42 @@
+@pedidos = http://localhost:3000
+
+### Todos los pedidos
+GET {{pedidos}}/pedidos
+
+### Un pedido con su detalle
+GET {{pedidos}}/pedidos/1
+
+### Hacer un pedido: 2 cafés y 1 burrito (debe dar 201 y un total de 120)
+POST {{pedidos}}/pedidos
+Content-Type: application/json
+
+{
+  "cliente": "Ana",
+  "productos": [
+    { "id": 1, "cantidad": 2 },
+    { "id": 3, "cantidad": 1 }
+  ]
+}
+
+### Producto que no existe en el menú (debe dar 400)
+POST {{pedidos}}/pedidos
+Content-Type: application/json
+
+{
+  "cliente": "Luis",
+  "productos": [
+    { "id": 99, "cantidad": 1 }
+  ]
+}
+
+### Cantidad en 0: la base la rechaza y la transacción deshace todo (debe dar 400)
+POST {{pedidos}}/pedidos
+Content-Type: application/json
+
+{
+  "cliente": "Sofía",
+  "productos": [
+    { "id": 1, "cantidad": 1 },
+    { "id": 2, "cantidad": 0 }
+  ]
+}

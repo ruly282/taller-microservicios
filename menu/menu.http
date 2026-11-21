@@ -1,0 +1,31 @@
+@menu = http://localhost:5000
+
+### Todos los productos
+GET {{menu}}/productos
+
+### Un producto
+GET {{menu}}/productos/1
+
+### Un producto que no existe (debe dar 404)
+GET {{menu}}/productos/99
+
+### Agregar un producto (debe dar 201)
+POST {{menu}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "Té de manzanilla",
+  "precio": 25
+}
+
+### Producto sin nombre (debe dar 400)
+POST {{menu}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "",
+  "precio": 25
+}
+
+### Borrar el producto 5 (debe dar 204)
+DELETE {{menu}}/productos/5
