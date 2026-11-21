@@ -13,7 +13,7 @@ Los dos guardan sus datos en SQL Server, cada uno en su propia base.
 
 1. En esta página, botón verde **Code** → pestaña **Codespaces** → **Create codespace on main**.
 2. Espera a que termine de prepararse. La primera vez tarda unos minutos.
-3. Sigue las instrucciones del bloque.
+3. Se abre la guía del taller, [`guia/README.md`](guia/README.md). Síguela bloque por bloque.
 
 No hay que instalar nada: todo corre en el navegador.
 

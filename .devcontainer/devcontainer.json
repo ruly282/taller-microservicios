@@ -19,7 +19,13 @@
   },
   "postCreateCommand": "bash .devcontainer/preparar.sh",
   "customizations": {
+    "codespaces": {
+      "openFiles": ["guia/README.md"]
+    },
     "vscode": {
+      "settings": {
+        "workbench.editorAssociations": { "*.md": "vscode.markdown.preview.editor" }
+      },
       "extensions": [
         "ms-dotnettools.csharp",
         "humao.rest-client"
