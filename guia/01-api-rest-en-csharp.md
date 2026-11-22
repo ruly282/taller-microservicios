@@ -20,7 +20,9 @@ cd menu
 dotnet run
 ```
 
-Debe decir `Now listening on: http://localhost:5000`. Abre `menu/menu.http` y manda **Todos los productos**: sale 404, porque esa ruta todavía no existe.
+Debe decir `Now listening on: http://localhost:5000`. Abre `menu/menu.http`.
+
+**Predice:** esa ruta todavía no la programas. Si mandas **Todos los productos**, ¿qué código crees que responda? Mándala y compara: sale 404, porque la ruta no existe.
 
 Cada vez que cambies el código: **Ctrl+C** y otra vez `dotnet run`.
 
@@ -46,7 +48,11 @@ app.MapGet("/productos/{id:int}", (int id) =>
 - `{id:int}` solo acepta números.
 - `Results.Ok` responde 200 y `Results.NotFound` responde 404.
 
+**Predice:** ¿qué va a responder **Un producto que no existe**? Mándala y compara.
+
 ## Tu turno
+
+Hazlo en pareja con quien tengas al lado: platiquen cómo resolverlo, cada quien lo escribe en su compu y revisen el código del otro. Cuando creas que ya quedó, abre una terminal nueva y corre `./revisar.sh 1`.
 
 ### Reto 1. Agregar un producto
 
@@ -119,6 +125,6 @@ app.MapDelete("/productos/{id:int}", (int id) =>
 
 ## Pruébalo
 
-Reinicia el servicio y manda, en orden, todas las peticiones de `menu/menu.http`. Cada una dice qué código debe dar.
+Reinicia el servicio y, en una terminal nueva, corre `./revisar.sh 1`. También puedes mandar, en orden, las peticiones de `menu/menu.http`: cada una dice qué código debe dar.
 
 **Para pensar:** agrega un producto, detén el servicio y vuelve a correrlo. ¿Sigue ahí? No, porque estaba en memoria. Eso se arregla en el bloque 2.

@@ -74,7 +74,7 @@ Cada parte que sigue va donde dice `// Aquí van las partes 2, 3 y 4`, una debaj
 
 ### Reto. Pregúntale al menú por cada producto
 
-Es la parte 2. Por cada producto que trae el pedido, pregúntale al menú con `buscarProducto(item.id)`:
+En pareja, como en el bloque 1. Es la parte 2. Por cada producto que trae el pedido, pregúntale al menú con `buscarProducto(item.id)`:
 
 - Si el menú no responde, `buscarProducto` lanza un error: responde 503 con `{ error: "El servicio de menú no está disponible" }`.
 - Si el producto no existe, regresa `null`: responde 400 y di cuál producto no existe.
@@ -94,7 +94,7 @@ Pistas:
 - Después de responder con `res.status(...).json(...)`, pon `return;` para que la ruta no siga.
 - Para guardar en la lista: `lineas.push({ producto, cantidad: item.cantidad })`.
 
-Para probarlo, pon por mientras `res.json(lineas);` al final de tu parte y manda **Hacer un pedido**: deben salir el café y el burrito con su precio. Prueba también **Producto que no existe en el menú**, que debe dar 400. Luego borra ese `res.json(lineas);`.
+Para probarlo, pon por mientras `res.json(lineas);` al final de tu parte y manda **Hacer un pedido**: deben salir el café y el burrito con su precio. También puedes correr `./revisar.sh 3`: en este reto deben salir OK las primeras tres pruebas, y las demás hasta que se hagan los pasos 5 y 6. Luego borra ese `res.json(lineas);`.
 
 <details>
 <summary>Ver la solución (primero inténtalo)</summary>
@@ -133,6 +133,28 @@ El precio se toma del menú, no de lo que manda el cliente. Si no, cualquiera po
 ```
 
 ### Paso 6. Guarda el pedido con una transacción
+
+**Antes de verla, ordénala.** Estos son los pasos de la transacción, revueltos. Platícalo con tu pareja: ¿en qué orden van?
+
+- `commit()`: guarda todo junto
+- `INSERT INTO PedidoDetalle`, una vez por cada producto
+- `begin()`: abre la transacción
+- `rollback()`: deshace todo si algo falla
+- `INSERT INTO Pedidos`, que regresa el `Id` del pedido nuevo
+
+<details>
+<summary>Ver el orden</summary>
+
+1. `begin()`
+2. `INSERT INTO Pedidos`: va primero porque el detalle necesita su `Id`
+3. `INSERT INTO PedidoDetalle`, una vez por cada producto
+4. `commit()`
+
+Si algo falla en el paso 2 o en el 3, `rollback()` deshace todo.
+
+</details>
+
+Ahora sí, el código:
 
 ```ts
   // 4. Guardar el pedido y su detalle en UNA transacción: se guarda todo o nada
@@ -196,7 +218,9 @@ Manda las peticiones de `pedidos/pedidos.http`:
 
 1. **Pedido de Ana:** debe dar 201 y un total de 120 (2 cafés de 30 y 1 burrito de 60).
 2. **Producto que no existe:** debe dar 400.
-3. **Pedido de Sofía, con cantidad en 0:** debe dar 400. Luego manda **Todos los pedidos**: el de Sofía no aparece. Tampoco quedó guardado su café, aunque ese sí venía bien: eso es la transacción.
-4. Detén el menú con **Ctrl+C** en su terminal y vuelve a mandar el pedido de Ana: debe dar 503. Después vuelve a arrancar el menú.
+3. **Pedido de Sofía, con cantidad en 0.** Antes de mandarlo, predice: su café sí venía bien, ¿se va a guardar? Mándalo: debe dar 400. Luego manda **Todos los pedidos**: el de Sofía no aparece, y su café tampoco quedó guardado. Eso es la transacción: todo o nada.
+4. **Menú apagado.** Predice: si el menú no responde, ¿qué le contesta pedidos al cliente? Detén el menú con **Ctrl+C** en su terminal y vuelve a mandar el pedido de Ana: debe dar 503. Después vuelve a arrancar el menú.
+
+Al final corre `./revisar.sh 3`: repite estas pruebas, menos la del menú apagado.
 
 **Para pensar:** sin la transacción, ¿qué habría quedado guardado del pedido de Sofía?

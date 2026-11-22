@@ -12,9 +12,12 @@
 
 ## Cómo va cada bloque
 
-1. **En el proyector:** se explica el tema y se programa la primera parte. Tú la vas escribiendo al mismo tiempo.
-2. **Tu turno:** sigue una parte que haces tú solo. La guía te dice qué debe hacer y te da pistas, pero no el código. La solución viene escondida: no la abras hasta intentarlo.
-3. **Se revisa:** se resuelve en el proyector y todos lo prueban.
+1. **En el proyector:** se explica el tema y se programa la primera parte. Tú la vas escribiendo al mismo tiempo. Antes de correr algo se pregunta qué va a pasar: piénsalo antes de verlo.
+2. **Tu turno, en pareja:** con quien tengas al lado. La guía les dice qué debe hacer el código y les da pistas, pero no el código. Platíquenlo, cada quien lo escribe en su compu y revisen el del otro. La solución viene escondida: no la abran hasta intentarlo.
+3. **Revisa tu reto:** en una terminal nueva corre `./revisar.sh 1`, con el número del bloque. Le hace peticiones a tus servicios y te dice qué ya funciona y qué falta.
+4. **Se resuelve juntos:** en el proyector, y todos lo prueban.
+
+Si te dan post-its, pega el verde en tu monitor cuando termines y el rojo si necesitas ayuda.
 
 ## Si te atoras
 

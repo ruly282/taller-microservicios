@@ -86,11 +86,13 @@ app.MapGet("/productos", async (MenuDb db) =>
 
 `MenuDb db` te llega sin que lo crees: ASP.NET Core lo hace por ti. A eso se le llama inyección de dependencias.
 
+**Predice:** la base y la tabla todavía no existen. ¿Qué crees que haga Entity Framework la primera vez que arranque el menú?
+
 Corre `dotnet run` y manda **Todos los productos**. En la terminal vas a ver el SQL que Entity Framework escribe por ti: `CREATE TABLE`, `SELECT`, `INSERT`...
 
 ## Tu turno
 
-Pasa las otras tres rutas a la base:
+En pareja, como en el bloque 1. Pasa las otras tres rutas a la base:
 
 - **Un producto:** en lugar de buscarlo en la lista, búscalo con `await db.Productos.FindAsync(id)`.
 - **Agregar:** la misma validación de antes. Luego `db.Productos.Add(producto)` y `await db.SaveChangesAsync()`.
@@ -103,6 +105,8 @@ Pistas:
 - Cada ruta recibe `MenuDb db` como un parámetro más y se vuelve `async`, igual que la del paso 5.
 - `Add` y `Remove` solo preparan el cambio. `SaveChangesAsync` es lo que lo manda a SQL Server.
 - Al agregar, pon `producto.Id = 0` antes del `Add`: el `Id` lo pone SQL Server.
+
+Cuando creas que ya quedó, reinicia el menú y corre `./revisar.sh 2` en una terminal nueva.
 
 <details>
 <summary>Ver la solución (primero inténtalo)</summary>
@@ -142,6 +146,6 @@ app.MapDelete("/productos/{id:int}", async (int id, MenuDb db) =>
 
 ## Pruébalo
 
-Reinicia el servicio y manda todas las peticiones de `menu/menu.http`.
+Reinicia el servicio y corre `./revisar.sh 2`, o manda las peticiones de `menu/menu.http`.
 
 **Para pensar:** agrega un producto, detén el servicio y vuelve a correrlo. Ahora sí sigue ahí.

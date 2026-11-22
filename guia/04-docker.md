@@ -72,6 +72,8 @@ La primera vez tarda un par de minutos, porque construye la imagen. Mientras, em
 
 ## Tu turno
 
+En pareja, como en el bloque 1.
+
 ### Reto 1. Dockerfile de pedidos
 
 Crea `pedidos/Dockerfile`. Se parece al del menú, pero con una sola etapa:
@@ -140,6 +142,8 @@ Pista: tiene la misma forma que el servicio `menu`.
 
 </details>
 
+**Para pensar:** si en `MENU_URL` pusieras `http://localhost:5000`, ¿qué respondería pedidos y por qué?
+
 ## Otra vez en el proyector
 
 ### Paso 3. Levanta todo
@@ -155,6 +159,6 @@ Para ver lo que dice cada uno: `docker compose logs menu` o `docker compose logs
 
 ## Pruébalo
 
-Los mismos archivos `.http` funcionan igual, porque ahora Docker publica los puertos 5000 y 3000.
+Corre `./revisar.sh 4`: revisa que estén los tres contenedores y que todo responda desde Docker. Los mismos archivos `.http` también funcionan, porque ahora Docker publica los puertos 5000 y 3000.
 
 Para apagar todo: `docker compose down`.
