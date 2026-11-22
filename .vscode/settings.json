@@ -1,0 +1,10 @@
+{
+  // La guía se abre ya formateada, con las soluciones escondidas
+  "workbench.editorAssociations": {
+    "*.md": "vscode.markdown.preview.editor"
+  },
+  // Sin el aviso de C# para crear launch.json y tasks.json: en el taller se usa dotnet run
+  "csharp.suppressBuildAssetsNotification": true,
+  // Sin chat ni autocompletado con IA: los retos son para resolverlos ustedes
+  "chat.disableAIFeatures": true
+}

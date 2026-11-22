@@ -19,6 +19,8 @@
 
 Si te dan post-its, pega el verde en tu monitor cuando termines y el rojo si necesitas ayuda.
 
+En este proyecto el chat y el autocompletado con IA vienen apagados: los retos son para que los resuelvas tú.
+
 ## Si te atoras
 
 Al inicio de cada bloque puedes brincar a una versión donde todo lo anterior ya funciona:
