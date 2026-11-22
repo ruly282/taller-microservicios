@@ -5,6 +5,7 @@
   },
   // Sin el aviso de C# para crear launch.json y tasks.json: en el taller se usa dotnet run
   "csharp.suppressBuildAssetsNotification": true,
-  // Sin chat ni autocompletado con IA: los retos son para resolverlos ustedes
-  "chat.disableAIFeatures": true
+  // Sin autocompletado con IA: los retos son para resolverlos ustedes
+  "github.copilot.enable": { "*": false },
+  "github.copilot.nextEditSuggestions.enabled": false
 }
