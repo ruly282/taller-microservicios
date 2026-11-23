@@ -1,226 +1,104 @@
-# 3. Servicio de pedidos en Node.js con TypeScript
+# 3. Pedidos en Node.js
 
-**Meta:** que pedidos le pregunte al menú por REST si cada producto existe y cuánto cuesta, y que guarde el pedido con una transacción.
+**Meta:** crear desde cero el servicio de pedidos, en Node.js con TypeScript. Recibe un pedido, le pregunta al menú por HTTP cuánto cuesta cada producto y lo guarda en su propia base.
 
-Si no terminaste el bloque 2: `./punto-de-control.sh 3`
+| Método | Ruta | Responde |
+| --- | --- | --- |
+| GET | `/pedidos` | Todos los pedidos (200) |
+| POST | `/pedidos` | Guarda el pedido (201), 400 si viene mal o 503 si el menú no responde |
 
-En el proyector se hace la llamada al menú y la validación. Luego te toca preguntarle al menú por cada producto, y al final se hace la transacción en el proyector.
+Si no terminaste el bloque 2, en la terminal **comandos**: `./punto-de-control.sh 3`
 
-## En el proyector
+Todo el servicio va en un solo archivo: `pedidos/index.ts`.
 
-### Paso 1. Ten todo corriendo
+## Paso 1. Ten arriba lo de antes
 
-Vas a necesitar tres cosas arriba, cada una en su terminal:
+Pedidos va a necesitar a SQL Server y al menú:
 
-1. **SQL Server:** `docker compose ps` debe decir **healthy**. Si no aparece: `docker compose up -d sqlserver`.
-2. **El menú:** `cd menu` y luego `dotnet run`.
-3. **Pedidos:** `cd pedidos` y luego `npm run dev`.
+1. En la terminal **comandos**, `docker compose ps` debe decir **healthy**. Si no aparece nada: `docker compose up -d`.
+2. En la terminal **menu**, el menú corriendo con `dotnet run`.
 
-Pedidos debe decir `Base de datos de pedidos lista`. Con `npm run dev`, cada vez que guardas un archivo el servicio se reinicia solo.
+## Paso 2. Crea el proyecto
 
-### Paso 2. Revisa lo que ya viene hecho
+En la terminal **pedidos**, una línea a la vez:
 
-- `pedidos/src/db.ts` crea la base `PedidosDb` y sus dos tablas con T-SQL. Fíjate en `CHECK (Cantidad > 0)`: la base no acepta cantidades en 0.
-- `pedidos/src/index.ts` ya trae `GET /pedidos` y `GET /pedidos/:id`.
-
-### Paso 3. Pregúntale al menú
-
-En `pedidos/src/menu.ts`, borra la línea del `throw` y en su lugar escribe:
-
-```ts
-  const respuesta = await fetch(`${MENU_URL}/productos/${id}`);
-
-  if (respuesta.status === 404) return null;
-  if (!respuesta.ok) throw new Error(`El menú respondió ${respuesta.status}`);
-
-  return (await respuesta.json()) as Producto;
+```bash
+mkdir pedidos
+cd pedidos
+npm init -y
+npm pkg set type=module scripts.dev="tsx watch index.ts"
+npm install express mssql
+npm install -D tsx @types/express @types/mssql @types/node
 ```
 
-Así se hablan dos microservicios: uno le hace una petición HTTP al otro, aunque estén hechos en lenguajes distintos.
+- `npm init -y` crea `package.json`, la ficha del proyecto.
+- `npm pkg set` le dice que use `import` y le agrega el script `dev`: `tsx` corre TypeScript directo y reinicia el servicio cada vez que guardas.
+- `express` es el servidor web y `mssql` habla con SQL Server.
+- Con `-D` van las que solo se usan para programar: `tsx` y los tipos, para que el editor te ayude con TypeScript.
 
-### Paso 4. Recibe el pedido y valídalo
+## Paso 3. La configuración de TypeScript
 
-En `pedidos/src/index.ts`, agrega este `import` junto a los otros:
+Adentro de `pedidos`, el archivo `tsconfig.json`. Le dice al editor cómo revisar tu código: TypeScript moderno, en modo estricto y con los tipos de Node.js.
 
-```ts
-import { buscarProducto, Producto } from "./menu";
+## Paso 4. La base de pedidos
+
+En `pedidos/index.ts`:
+
+- La conexión a SQL Server.
+- Que cree la base `PedidosDb` y su tabla `Pedidos` si todavía no existen. Es T-SQL normal.
+
+Las columnas van en minúsculas (`id`, `cliente`, `total`, `fecha`) para que el JSON salga igual que el del menú.
+
+## Paso 5. El servidor y la lista de pedidos
+
+En `pedidos/index.ts`: Express, la ruta `GET /pedidos` y, hasta abajo, el servidor en el puerto 3000.
+
+Córrelo en la terminal **pedidos**:
+
+```bash
+npm run dev
 ```
 
-La ruta va en cuatro partes. Borra el comentario `TODO bloque 3` y en su lugar escribe la primera:
+Debe decir `Pedidos escuchando en el puerto 3000`. Abre `pruebas/pedidos.http` y manda **Todos los pedidos**: sale `[]`, todavía no hay ninguno.
 
-```ts
-// Lo que manda el cliente al hacer un pedido
-interface PedidoNuevo {
-  cliente?: string;
-  productos?: { id: number; cantidad: number }[];
-}
+Desde aquí ya no tienes que reiniciar: cada vez que guardas, se reinicia solo.
 
-app.post("/pedidos", async (req, res) => {
-  const { cliente, productos } = req.body as PedidoNuevo;
+## Paso 6. Recibir un pedido
 
-  // 1. Validar lo que llegó
-  if (!cliente || !Array.isArray(productos) || productos.length === 0) {
-    res.status(400).json({ error: "Manda el cliente y al menos un producto" });
-    return;
-  }
+La ruta `POST /pedidos`, en 4 partes:
 
-  // Aquí van las partes 2, 3 y 4
-});
-```
+1. **Valida lo que llegó:** sin cliente, sin productos o con una cantidad menor a 1, responde 400.
+2. **Le pregunta al menú por cada producto** con `fetch`. Si el menú no contesta: 503. Si contesta que el producto no existe: 400.
+3. **Calcula el total** con el precio que da el menú, nunca con uno que mande el cliente.
+4. **Guarda el pedido** con parámetros, para que nadie pueda meter SQL en el nombre del cliente (inyección SQL). Responde 201 con el pedido guardado.
 
-Cada parte que sigue va donde dice `// Aquí van las partes 2, 3 y 4`, una debajo de la otra.
-
-## Tu turno
-
-### Reto. Pregúntale al menú por cada producto
-
-En pareja, como en el bloque 1. Es la parte 2. Por cada producto que trae el pedido, pregúntale al menú con `buscarProducto(item.id)`:
-
-- Si el menú no responde, `buscarProducto` lanza un error: responde 503 con `{ error: "El servicio de menú no está disponible" }`.
-- Si el producto no existe, regresa `null`: responde 400 y di cuál producto no existe.
-- Si existe, guárdalo junto con su cantidad en `lineas`. Esa lista se usa después para el total y para guardar el pedido.
-
-Empieza con esta línea:
-
-```ts
-  const lineas: { producto: Producto; cantidad: number }[] = [];
-```
-
-Pistas:
-
-- Recorre los productos con `for (const item of productos)`.
-- Pon el `await buscarProducto(item.id)` dentro de un `try { ... } catch { ... }`. El 503 va en el `catch`.
-- Ojo: si declaras `producto` adentro del `try`, afuera no existe. Declárala antes: `let producto: Producto | null;`
-- Después de responder con `res.status(...).json(...)`, pon `return;` para que la ruta no siga.
-- Para guardar en la lista: `lineas.push({ producto, cantidad: item.cantidad })`.
-
-Para probarlo, pon por mientras `res.json(lineas);` al final de tu parte y manda **Hacer un pedido**: deben salir el café y el burrito con su precio. También puedes correr `./revisar.sh 3`: en este reto deben salir OK las primeras tres pruebas, y las demás hasta que se hagan los pasos 5 y 6. Luego borra ese `res.json(lineas);`.
-
-<details>
-<summary>Ver la solución (primero inténtalo)</summary>
-
-```ts
-  // 2. Preguntarle al menú por cada producto: un microservicio llamando a otro por REST
-  const lineas: { producto: Producto; cantidad: number }[] = [];
-  for (const item of productos) {
-    let producto: Producto | null;
-    try {
-      producto = await buscarProducto(item.id);
-    } catch {
-      res.status(503).json({ error: "El servicio de menú no está disponible" });
-      return;
-    }
-
-    if (!producto) {
-      res.status(400).json({ error: `El producto ${item.id} no existe en el menú` });
-      return;
-    }
-    lineas.push({ producto, cantidad: item.cantidad });
-  }
-```
-
-El precio se toma del menú, no de lo que manda el cliente. Si no, cualquiera podría pedir un burrito a 1 peso.
-
-</details>
-
-## Otra vez en el proyector
-
-### Paso 5. Calcula el total
-
-```ts
-  // 3. Calcular el total con los precios que dio el menú
-  const total = lineas.reduce((suma, l) => suma + l.producto.precio * l.cantidad, 0);
-```
-
-### Paso 6. Guarda el pedido con una transacción
-
-**Antes de verla, ordénala.** Estos son los pasos de la transacción, revueltos. Platícalo con tu pareja: ¿en qué orden van?
-
-- `commit()`: guarda todo junto
-- `INSERT INTO PedidoDetalle`, una vez por cada producto
-- `begin()`: abre la transacción
-- `rollback()`: deshace todo si algo falla
-- `INSERT INTO Pedidos`, que regresa el `Id` del pedido nuevo
-
-<details>
-<summary>Ver el orden</summary>
-
-1. `begin()`
-2. `INSERT INTO Pedidos`: va primero porque el detalle necesita su `Id`
-3. `INSERT INTO PedidoDetalle`, una vez por cada producto
-4. `commit()`
-
-Si algo falla en el paso 2 o en el 3, `rollback()` deshace todo.
-
-</details>
-
-Ahora sí, el código:
-
-```ts
-  // 4. Guardar el pedido y su detalle en UNA transacción: se guarda todo o nada
-  const pool = await obtenerPool();
-  const transaccion = new sql.Transaction(pool);
-  await transaccion.begin();
-
-  try {
-    const resultado = await transaccion.request()
-      .input("cliente", sql.NVarChar(100), cliente)
-      .input("total", sql.Decimal(10, 2), total)
-      .query("INSERT INTO Pedidos (Cliente, Total) OUTPUT INSERTED.Id VALUES (@cliente, @total)");
-    const pedidoId: number = resultado.recordset[0].Id;
-
-    for (const { producto, cantidad } of lineas) {
-      await transaccion.request()
-        .input("pedidoId", sql.Int, pedidoId)
-        .input("productoId", sql.Int, producto.id)
-        .input("nombre", sql.NVarChar(100), producto.nombre)
-        .input("cantidad", sql.Int, cantidad)
-        .input("precio", sql.Decimal(10, 2), producto.precio)
-        .query(`
-          INSERT INTO PedidoDetalle (PedidoId, ProductoId, Nombre, Cantidad, PrecioUnitario)
-          VALUES (@pedidoId, @productoId, @nombre, @cantidad, @precio)
-        `);
-    }
-
-    await transaccion.commit();
-
-    res.status(201).json({
-      id: pedidoId,
-      cliente,
-      total,
-      productos: lineas.map(({ producto, cantidad }) => ({
-        id: producto.id,
-        nombre: producto.nombre,
-        cantidad,
-        precio: producto.precio,
-      })),
-    });
-  } catch (error) {
-    await transaccion.rollback(); // se deshace TODO lo que se alcanzó a guardar
-
-    // 547 = SQL Server rechazó un dato por una regla de la tabla (aquí, Cantidad > 0)
-    if (error instanceof sql.RequestError && error.number === 547) {
-      res.status(400).json({ error: "La base de datos rechazó el pedido: la cantidad debe ser mayor a 0" });
-      return;
-    }
-    throw error;
-  }
-```
-
-Al final borra el comentario `// Aquí van las partes 2, 3 y 4`.
-
-- `begin()` abre la transacción. Si todos los `INSERT` salen bien, `commit()` los guarda juntos. Si alguno falla, `rollback()` los deshace todos.
-- `@cliente`, `@total` y los demás son parámetros. El texto del usuario nunca se pega dentro del SQL, y así se evita la inyección SQL.
+Mientras escribes, la terminal de pedidos se llena de errores: es normal. Se reinicia con cada guardado y se arregla al terminar el paso.
 
 ## Pruébalo
 
-Manda las peticiones de `pedidos/pedidos.http`:
+Manda, de `pruebas/pedidos.http`:
 
-1. **Pedido de Ana:** debe dar 201 y un total de 120 (2 cafés de 30 y 1 burrito de 60).
-2. **Producto que no existe:** debe dar 400.
-3. **Pedido de Sofía, con cantidad en 0.** Antes de mandarlo, predice: su café sí venía bien, ¿se va a guardar? Mándalo: debe dar 400. Luego manda **Todos los pedidos**: el de Sofía no aparece, y su café tampoco quedó guardado. Eso es la transacción: todo o nada.
-4. **Menú apagado.** Predice: si el menú no responde, ¿qué le contesta pedidos al cliente? Detén el menú con **Ctrl+C** en su terminal y vuelve a mandar el pedido de Ana: debe dar 503. Después vuelve a arrancar el menú.
+1. **Hacer un pedido:** 201 y un total de 120, porque son 2 × 30 + 1 × 60.
+2. **Producto que no existe en el menú:** 400.
+3. **Cantidad en 0:** 400.
+4. **Predice:** si el menú no está corriendo, ¿qué le responde pedidos al cliente? Detén el menú con Ctrl+C en su terminal y vuelve a mandar **Hacer un pedido**. Después vuelve a arrancar el menú.
 
-Al final corre `./revisar.sh 3`: repite estas pruebas, menos la del menú apagado.
+## Revisa tu bloque
 
-**Para pensar:** sin la transacción, ¿qué habría quedado guardado del pedido de Sofía?
+Con el menú y pedidos corriendo, en la terminal **comandos**:
+
+```bash
+./revisar.sh 3
+```
+
+**Para pensar:** la base del menú está en el mismo SQL Server. ¿Por qué pedidos le pregunta los precios al menú por HTTP en lugar de leer su tabla directo?
+
+## Para seguir practicando en tu casa
+
+Si quieres ver el proyecto terminado: `./punto-de-control.sh final`.
+
+- En el menú, una ruta `PUT /productos/{id}` para cambiar el precio.
+- En pedidos, `GET /pedidos/{id}` para ver un solo pedido.
+- Guardar también qué productos llevó cada pedido, en otra tabla, y hacerlo con una transacción para que se guarde todo o nada.
+- Meter cada servicio en su propio contenedor, con un `Dockerfile`, y levantar todo junto con Docker Compose.
+- Que pedidos le avise a una cocina de cada pedido nuevo con mensajes, por ejemplo con RabbitMQ.

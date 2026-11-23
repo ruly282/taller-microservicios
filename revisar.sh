@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Revisa tu reto: le hace peticiones a tus servicios y te dice qué ya funciona y qué falta.
-# Uso: ./revisar.sh 1   (cambia el 1 por el número del bloque: 1, 2, 3 o 4)
+# Revisa tu bloque: le hace peticiones a tus servicios y te dice qué ya funciona y qué falta.
+# Uso: ./revisar.sh 1   (cambia el 1 por el número del bloque: 1, 2 o 3)
 set -u
+cd "$(dirname "$0")"
 
 MENU=http://localhost:5000
 PEDIDOS=http://localhost:3000
@@ -58,18 +59,18 @@ revisar_menu() {
   responde "$MENU/" "El menú no responde en el puerto 5000. ¿Lo dejaste corriendo con dotnet run?"
 
   revisar "Todos los productos" 200 "$(codigo GET "$MENU/productos")" \
-    "¿Ya está la ruta GET /productos? ¿Reiniciaste el servicio después de guardar?"
+    "¿Ya está la ruta GET /productos? ¿Reiniciaste el menú después de guardar?"
   revisar "Un producto que existe" 200 "$(codigo GET "$MENU/productos/1")" \
-    "Revisa la ruta GET /productos/{id:int}."
+    "Revisa la ruta GET /productos/{id}."
   revisar "Un producto que no existe" 404 "$(codigo GET "$MENU/productos/99")" \
-    "Si no existe, responde con Results.NotFound(...)."
+    "Si no existe, responde con Results.NotFound()."
 
   revisar "Agregar un producto" 201 "$(codigo POST "$MENU/productos" '{"nombre":"Prueba del revisor","precio":10}')" \
     "Si los datos están bien, responde con Results.Created(...)."
   local id
   id=$(campo id)
   revisar "Producto sin nombre" 400 "$(codigo POST "$MENU/productos" '{"nombre":"","precio":10}')" \
-    "Revisa el nombre con string.IsNullOrWhiteSpace y responde Results.BadRequest(...)."
+    "Revisa el nombre con string.IsNullOrWhiteSpace y responde con Results.BadRequest(...)."
   revisar "Producto con precio en 0" 400 "$(codigo POST "$MENU/productos" '{"nombre":"Sin precio","precio":0}')" \
     "Revisa que el precio sea mayor a 0."
 
@@ -77,32 +78,32 @@ revisar_menu() {
     revisar "Borrar el producto que se agregó" 204 "$(codigo DELETE "$MENU/productos/$id")" \
       "Después de quitarlo, responde con Results.NoContent()."
     revisar "Borrar un producto que ya no existe" 404 "$(codigo DELETE "$MENU/productos/$id")" \
-      "Si no lo encuentras, responde con Results.NotFound(...)."
+      "Si no lo encuentras, responde con Results.NotFound()."
   else
-    echo "  FALTA  Borrar: no se pudo probar porque Agregar no regresó el producto con su id"
+    echo "  FALLA  Borrar: no se pudo probar porque Agregar no regresó el producto con su id"
     fallas=$((fallas + 1))
   fi
 }
 
-revisar_pedidos() {  # revisar_pedidos "pista si el pedido de Ana falla"
+revisar_pedidos() {
   responde "$PEDIDOS/" "Pedidos no responde en el puerto 3000. ¿Lo dejaste corriendo con npm run dev?"
 
   local antes
   antes=$(contar_pedidos)
   revisar "Todos los pedidos" 200 "$(codigo GET "$PEDIDOS/pedidos")" \
-    "Esta ruta ya venía hecha: revisa que pedidos haya arrancado bien."
+    "Revisa la ruta GET /pedidos y que pedidos haya arrancado sin errores."
   revisar "Pedido sin cliente ni productos" 400 "$(codigo POST "$PEDIDOS/pedidos" '{}')" \
-    "Valida que venga el cliente y al menos un producto (paso 4)."
+    "Valida que venga el cliente y al menos un producto."
   revisar "Producto que no existe en el menú" 400 "$(codigo POST "$PEDIDOS/pedidos" '{"cliente":"Revisor","productos":[{"id":99,"cantidad":1}]}')" \
-    "Si buscarProducto regresa null, responde 400 (tu reto)."
+    "Si el menú no responde 200 (respuesta.ok), responde 400."
   revisar "Pedido de 2 cafés y 1 burrito" 201 "$(codigo POST "$PEDIDOS/pedidos" '{"cliente":"Revisor","productos":[{"id":1,"cantidad":2},{"id":3,"cantidad":1}]}')" \
-    "$1"
+    "Si da 503, pedidos no encuentra al menú. Si da 500, mira el error en la terminal de pedidos."
   revisar "Total del pedido" 120 "$(campo total)" \
     "El total sale de los precios del menú: 2 × 30 + 1 × 60."
   revisar "Cantidad en 0" 400 "$(codigo POST "$PEDIDOS/pedidos" '{"cliente":"Revisor","productos":[{"id":1,"cantidad":1},{"id":2,"cantidad":0}]}')" \
-    "La base rechaza la cantidad en 0 (error 547): atrápalo y responde 400."
-  revisar "La transacción no guardó nada del pedido con cantidad en 0" "$((antes + 1))" "$(contar_pedidos)" \
-    "Si quedó guardado algo de ese pedido, la transacción no está deshaciendo todo."
+    "Revisa la cantidad de cada producto antes de preguntarle al menú."
+  revisar "El pedido con cantidad en 0 no se guardó" "$((antes + 1))" "$(contar_pedidos)" \
+    "Solo se debió guardar el pedido de 2 cafés y 1 burrito."
 }
 
 case "${1:-}" in
@@ -114,7 +115,7 @@ case "${1:-}" in
         bien=$((bien + 1))
       else
         echo "  FALLA  SQL Server no está arriba"
-        echo "         Pista: corre docker compose up -d sqlserver y espera a que diga healthy."
+        echo "         Pista: corre docker compose up -d y espera a que docker compose ps diga healthy."
         fallas=$((fallas + 1))
       fi
     fi
@@ -122,29 +123,12 @@ case "${1:-}" in
     ;;
   3)
     echo "==> Revisando pedidos (bloque 3)"
-    responde "$MENU/" "El menú no responde en el puerto 5000: pedidos lo necesita. Arráncalo con cd menu y dotnet run."
-    revisar_pedidos "Si estás en el reto y pusiste res.json(lineas), aquí sale 200: es normal. Luego faltan el total y la transacción (pasos 5 y 6)."
+    responde "$MENU/" "El menú no responde en el puerto 5000 y pedidos lo necesita. Arráncalo: cd menu y dotnet run."
+    revisar_pedidos
     echo "  A MANO Detén el menú con Ctrl+C y manda Hacer un pedido: debe dar 503. Luego vuelve a arrancarlo."
     ;;
-  4)
-    echo "==> Revisando Docker Compose (bloque 4)"
-    corriendo=$(docker compose ps --services --status running 2>/dev/null)
-    for servicio in sqlserver menu pedidos; do
-      if echo "$corriendo" | grep -qx "$servicio"; then
-        echo "  OK     $servicio está corriendo en su contenedor"
-        bien=$((bien + 1))
-      else
-        echo "  FALLA  $servicio no está corriendo"
-        echo "         Pista: docker compose up -d --build y luego docker compose logs $servicio"
-        fallas=$((fallas + 1))
-      fi
-    done
-    revisar "El menú responde desde Docker" 200 "$(codigo GET "$MENU/productos")" \
-      "Revisa con docker compose logs menu."
-    revisar_pedidos "Si da 503, revisa MENU_URL en compose.yaml: adentro de Docker el menú es http://menu:5000."
-    ;;
   *)
-    echo "Uso: ./revisar.sh <bloque>   (1, 2, 3 o 4)"
+    echo "Uso: ./revisar.sh <bloque>   (1, 2 o 3)"
     exit 1
     ;;
 esac

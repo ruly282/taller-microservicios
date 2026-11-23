@@ -1,11 +1,11 @@
 {
-  // La guía se abre ya formateada, con las soluciones escondidas
+  // La guía se abre ya formateada
   "workbench.editorAssociations": {
     "*.md": "vscode.markdown.preview.editor"
   },
   // Sin el aviso de C# para crear launch.json y tasks.json: en el taller se usa dotnet run
   "csharp.suppressBuildAssetsNotification": true,
-  // Sin autocompletado con IA: los retos son para resolverlos ustedes
+  // Sin autocompletado con IA: la idea es que el código lo escribas tú
   "github.copilot.enable": { "*": false },
   "github.copilot.nextEditSuggestions.enabled": false
 }

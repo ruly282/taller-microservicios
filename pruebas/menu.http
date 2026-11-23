@@ -1,5 +1,8 @@
 @menu = http://localhost:5000
 
+### Inicio
+GET {{menu}}/
+
 ### Todos los productos
 GET {{menu}}/productos
 
@@ -10,6 +13,7 @@ GET {{menu}}/productos/1
 GET {{menu}}/productos/99
 
 ### Agregar un producto (debe dar 201)
+# @name agregar
 POST {{menu}}/productos
 Content-Type: application/json
 
@@ -27,5 +31,5 @@ Content-Type: application/json
   "precio": 25
 }
 
-### Borrar el producto 5 (debe dar 204)
-DELETE {{menu}}/productos/5
+### Borrar el producto que acabas de agregar (debe dar 204; antes manda Agregar)
+DELETE {{menu}}/productos/{{agregar.response.body.$.id}}

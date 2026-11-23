@@ -1,29 +1,31 @@
 # Guía del taller
 
-| Bloque | Hora | Qué haces |
+| Bloque | Hora | Qué vas a hacer |
 | --- | --- | --- |
-| [0. Antes de empezar](00-antes-de-empezar.md) | 10:00 | Abres tu Codespace y conoces el proyecto |
-| [1. API REST en C#](01-api-rest-en-csharp.md) | 10:15 | Haces el servicio de menú con ASP.NET Core |
-| [2. SQL Server con Entity Framework](02-sql-server-con-entity-framework.md) | 10:55 | El menú guarda sus productos en una base de datos |
-| Descanso | 11:30 | |
-| [3. Servicio en Node.js con TypeScript](03-pedidos-en-nodejs.md) | 11:40 | Pedidos le pregunta al menú y guarda con una transacción |
-| [4. Docker](04-docker.md) | 12:20 | Cada servicio en su contenedor y todo con un solo comando |
-| [Extra: RabbitMQ](05-extra-rabbitmq.md) | En tu casa | Pedidos le avisa a cocina con mensajes |
+| [0. Antes de empezar](00-antes-de-empezar.md) | 10:00 | Abres tu Codespace |
+| [1. API REST en C#](01-api-rest-en-csharp.md) | 10:15 | Creas el servicio de menú con ASP.NET Core |
+| [2. SQL Server con Entity Framework](02-sql-server-con-entity-framework.md) | 11:00 | El menú guarda sus productos en una base de datos |
+| Descanso | 11:45 | |
+| [3. Pedidos en Node.js](03-pedidos-en-nodejs.md) | 11:55 | Creas el servicio de pedidos, que le pregunta al menú |
+| Cierre | 12:45 | Lo que sigue y preguntas |
 
-## Cómo va cada bloque
+## Cómo va el taller
 
-1. **En el proyector:** se explica el tema y se programa la primera parte. Tú la vas escribiendo al mismo tiempo. Antes de correr algo se pregunta qué va a pasar: piénsalo antes de verlo.
-2. **Tu turno, en pareja:** con quien tengas al lado. La guía les dice qué debe hacer el código y les da pistas, pero no el código. Platíquenlo, cada quien lo escribe en su compu y revisen el del otro. La solución viene escondida: no la abran hasta intentarlo.
-3. **Revisa tu reto:** en una terminal nueva corre `./revisar.sh 1`, con el número del bloque. Le hace peticiones a tus servicios y te dice qué ya funciona y qué falta.
-4. **Se resuelve juntos:** en el proyector, y todos lo prueban.
+El proyecto empieza vacío. En el proyector se escribe todo el código paso a paso, explicando qué hace cada parte, y tú lo vas escribiendo igual en tu Codespace. Al terminar cada paso se prueba.
 
-Si te dan post-its, pega el verde en tu monitor cuando termines y el rojo si necesitas ayuda.
+Esta guía no trae el código: trae los pasos, para que sepas en cuál vamos, en qué archivo va cada cosa y cómo probarla. Solo vienen los comandos de la terminal, porque son largos.
 
-En este proyecto el autocompletado con IA viene apagado, y en los retos tampoco uses el chat de IA: son para que los resuelvas tú.
+- **Escríbelo tú, siguiendo el proyector:** así se te queda.
+- **Predice:** antes de correr algo se pregunta qué crees que va a pasar. Piénsalo antes de verlo.
+- **Revisa tu bloque:** al final de cada uno corre `./revisar.sh` con el número del bloque, por ejemplo `./revisar.sh 1`. Le hace peticiones a tus servicios y te dice qué ya funciona y qué no.
+
+Si te dan post-its, pega el verde en tu monitor cuando te funcione y el rojo si te atoraste.
+
+En este proyecto el autocompletado con IA viene apagado: la idea es que el código lo escribas tú.
 
 ## Si te atoras
 
-Al inicio de cada bloque puedes brincar a una versión donde todo lo anterior ya funciona:
+Levanta el post-it rojo y te ayudamos. Si de plano te quedaste atrás, al empezar el siguiente bloque puedes brincar a una versión donde todo lo anterior ya funciona:
 
 ```bash
 ./punto-de-control.sh 3
@@ -38,4 +40,4 @@ El backend de una cafetería con dos microservicios:
 - **menu**, en C#: dice qué productos hay y cuánto cuestan.
 - **pedidos**, en Node.js con TypeScript: recibe pedidos, le pregunta al menú si cada producto existe y cuánto cuesta, y guarda el pedido.
 
-Cada servicio tiene su propia base de datos dentro del mismo SQL Server, y al final todo corre en Docker.
+Cada servicio tiene su propia base de datos dentro del mismo SQL Server, que corre en Docker.

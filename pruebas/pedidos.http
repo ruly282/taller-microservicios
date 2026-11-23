@@ -3,9 +3,6 @@
 ### Todos los pedidos
 GET {{pedidos}}/pedidos
 
-### Un pedido con su detalle
-GET {{pedidos}}/pedidos/1
-
 ### Hacer un pedido: 2 cafés y 1 burrito (debe dar 201 y un total de 120)
 POST {{pedidos}}/pedidos
 Content-Type: application/json
@@ -29,14 +26,13 @@ Content-Type: application/json
   ]
 }
 
-### Cantidad en 0: la base la rechaza y la transacción deshace todo (debe dar 400)
+### Cantidad en 0 (debe dar 400)
 POST {{pedidos}}/pedidos
 Content-Type: application/json
 
 {
   "cliente": "Sofía",
   "productos": [
-    { "id": 1, "cantidad": 1 },
-    { "id": 2, "cantidad": 0 }
+    { "id": 1, "cantidad": 0 }
   ]
 }

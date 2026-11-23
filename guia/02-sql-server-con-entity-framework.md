@@ -1,151 +1,71 @@
 # 2. SQL Server con Entity Framework
 
-**Meta:** que el menú guarde sus productos en SQL Server sin escribir SQL a mano.
+**Meta:** que el menú guarde sus productos en SQL Server, sin escribir SQL a mano.
 
-Si no terminaste el bloque 1: `./punto-de-control.sh 2`
+Si no terminaste el bloque 1, en la terminal **comandos**: `./punto-de-control.sh 2`
 
-En el proyector se levanta la base y se pasa a SQL Server la ruta de todos los productos. Las otras tres te tocan a ti.
+## Paso 1. SQL Server en Docker
 
-## En el proyector
+En la carpeta principal del proyecto (no adentro de `menu`) se crea el archivo `compose.yaml`, con el servicio `sqlserver`. Cuida la sangría: en YAML los espacios importan.
 
-### Paso 1. Levanta SQL Server
-
-En una terminal nueva, en la carpeta principal del proyecto:
+En la terminal **comandos**:
 
 ```bash
-docker compose up -d sqlserver
+docker compose up -d
 docker compose ps
 ```
 
-Repite `docker compose ps` hasta que diga **healthy**, unos 30 segundos. SQL Server corre en un contenedor de Docker: no se instaló nada.
+Repite `docker compose ps` hasta que diga **healthy**, unos 30 segundos. SQL Server corre en un contenedor: no se instaló nada.
 
-### Paso 2. Revisa `menu/MenuDb.cs` (ya viene hecho)
+## Paso 2. Instala Entity Framework
 
-- `MenuDb` hereda de `DbContext`: representa la base de datos del menú.
-- `DbSet<Producto> Productos` es la tabla `Productos`.
-- `HasData` mete los 4 productos de inicio la primera vez que se crea la tabla.
+En la terminal **menu**, detén el servicio con Ctrl+C y escribe:
 
-### Paso 3. Ajusta `menu/Producto.cs`
-
-Déjalo así:
-
-```csharp
-using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore;
-
-namespace Menu;
-
-public class Producto
-{
-    public int Id { get; set; }
-
-    [MaxLength(100)]
-    public string Nombre { get; set; } = "";
-
-    // Dinero: 10 dígitos en total y 2 decimales, como DECIMAL(10, 2) en SQL Server
-    [Precision(10, 2)]
-    public decimal Precio { get; set; }
-}
+```bash
+dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 10.0.15
 ```
 
-Sin `[Precision]`, Entity Framework no sabe cuántos decimales guardar y te lo avisa con un warning.
+Va con `--version` porque la versión más nueva es para .NET 11, y tu proyecto es de .NET 10. Fíjate en `menu.csproj`: ahí quedó el paquete.
 
-### Paso 4. Conecta el menú con la base en `menu/Program.cs`
+## Paso 3. La base de datos en código
 
-Arriba, junto al otro `using`:
+En `menu/Program.cs`:
 
-```csharp
-using Microsoft.EntityFrameworkCore;
-```
+- Hasta arriba, el `using` de Entity Framework.
+- En `Producto`, el precio con 2 decimales, como `DECIMAL(10, 2)` en SQL Server.
+- Abajo de `Producto`, la clase `MenuDb`, que representa la base. Su tabla es `Productos`.
+- Los 4 productos se pasan de la lista a la base: se meten la primera vez que se crea la tabla. La lista ya no se usa.
 
-Justo después de `var builder = WebApplication.CreateBuilder(args);`:
+## Paso 4. Conecta el menú con la base
 
-```csharp
-builder.Services.AddDbContext<MenuDb>(opciones =>
-    opciones.UseSqlServer(builder.Configuration.GetConnectionString("MenuDb")));
-```
+En `menu/Program.cs`:
 
-La cadena de conexión no está en el código, está en `appsettings.Development.json`. En el bloque 4, Docker se la va a pasar con una variable de entorno.
+- La cadena de conexión: dónde está SQL Server, qué base usar y con qué usuario.
+- Al arrancar, que se creen la base y la tabla si todavía no existen.
 
-Justo después de `var app = builder.Build();`:
+La contraseña va en el código solo para no complicarnos en el taller. En una empresa va en un gestor de secretos.
 
-```csharp
-await BaseDeDatos.PrepararAsync(app);
-```
+## Paso 5. Las rutas, ahora con la base
 
-Eso crea la base y la tabla si no existen. `BaseDeDatos.cs` ya viene hecho.
+Las 4 rutas usan la base en lugar de la lista:
 
-### Paso 5. Todos los productos, ahora desde la base
-
-Cambia solo la ruta de todos los productos por esta:
-
-```csharp
-app.MapGet("/productos", async (MenuDb db) =>
-    await db.Productos.OrderBy(p => p.Id).ToListAsync());
-```
-
-`MenuDb db` te llega sin que lo crees: ASP.NET Core lo hace por ti. A eso se le llama inyección de dependencias.
-
-**Predice:** la base y la tabla todavía no existen. ¿Qué crees que haga Entity Framework la primera vez que arranque el menú?
-
-Corre `dotnet run` y manda **Todos los productos**. En la terminal vas a ver el SQL que Entity Framework escribe por ti: `CREATE TABLE`, `SELECT`, `INSERT`...
-
-## Tu turno
-
-En pareja, como en el bloque 1. Pasa las otras tres rutas a la base:
-
-- **Un producto:** en lugar de buscarlo en la lista, búscalo con `await db.Productos.FindAsync(id)`.
-- **Agregar:** la misma validación de antes. Luego `db.Productos.Add(producto)` y `await db.SaveChangesAsync()`.
-- **Borrar:** búscalo con `FindAsync`, y luego `db.Productos.Remove(producto)` y `await db.SaveChangesAsync()`.
-
-Cuando termines, borra la lista `productos`: ya no se usa.
-
-Pistas:
-
-- Cada ruta recibe `MenuDb db` como un parámetro más y se vuelve `async`, igual que la del paso 5.
+- Cada ruta recibe la base como parámetro, y ASP.NET Core se la da. A eso se le llama inyección de dependencias.
+- `async` y `await`: mientras espera a la base, el servidor puede atender otras peticiones.
 - `Add` y `Remove` solo preparan el cambio. `SaveChangesAsync` es lo que lo manda a SQL Server.
-- Al agregar, pon `producto.Id = 0` antes del `Add`: el `Id` lo pone SQL Server.
-
-Cuando creas que ya quedó, reinicia el menú y corre `./revisar.sh 2` en una terminal nueva.
-
-<details>
-<summary>Ver la solución (primero inténtalo)</summary>
-
-```csharp
-app.MapGet("/productos/{id:int}", async (int id, MenuDb db) =>
-    await db.Productos.FindAsync(id) is Producto producto
-        ? Results.Ok(producto)
-        : Results.NotFound(new { error = $"No existe el producto {id}" }));
-
-app.MapPost("/productos", async (Producto producto, MenuDb db) =>
-{
-    if (string.IsNullOrWhiteSpace(producto.Nombre))
-        return Results.BadRequest(new { error = "El nombre es obligatorio" });
-    if (producto.Precio <= 0)
-        return Results.BadRequest(new { error = "El precio debe ser mayor a 0" });
-
-    producto.Id = 0; // el Id lo pone SQL Server
-    db.Productos.Add(producto);
-    await db.SaveChangesAsync();
-    return Results.Created($"/productos/{producto.Id}", producto);
-});
-
-app.MapDelete("/productos/{id:int}", async (int id, MenuDb db) =>
-{
-    var producto = await db.Productos.FindAsync(id);
-    if (producto is null)
-        return Results.NotFound(new { error = $"No existe el producto {id}" });
-
-    db.Productos.Remove(producto);
-    await db.SaveChangesAsync();
-    return Results.NoContent();
-});
-```
-
-</details>
+- El `Id` ya lo pone SQL Server.
 
 ## Pruébalo
 
-Reinicia el servicio y corre `./revisar.sh 2`, o manda las peticiones de `menu/menu.http`.
+**Predice:** la base y la tabla todavía no existen. ¿Qué crees que pase cuando arranque el menú?
 
-**Para pensar:** agrega un producto, detén el servicio y vuelve a correrlo. Ahora sí sigue ahí.
+En la terminal **menu**: `dotnet run`. En la terminal vas a ver el SQL que Entity Framework escribe por ti: `CREATE DATABASE`, `CREATE TABLE`, `INSERT`...
+
+Manda **Todos los productos** y **Agregar un producto**. Luego reinicia el menú y vuelve a pedir todos: ahora el producto nuevo sí sigue ahí.
+
+## Revisa tu bloque
+
+Con el menú corriendo, en la terminal **comandos**:
+
+```bash
+./revisar.sh 2
+```
