@@ -1,42 +1,47 @@
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// SQL Server corre en Docker, aquí mismo en el Codespace
+var conexion = "Server=localhost;Database=MenuDb;User Id=sa;Password=TallerCafe_2026;TrustServerCertificate=true";
+builder.Services.AddDbContext<MenuDb>(opciones => opciones.UseSqlServer(conexion));
+
 var app = builder.Build();
 
-// Por ahora los productos viven en memoria: se pierden al reiniciar
-var productos = new List<Producto>
+// Crea la base y la tabla si todavía no existen
+using (var scope = app.Services.CreateScope())
 {
-    new Producto { Id = 1, Nombre = "Café americano", Precio = 30 },
-    new Producto { Id = 2, Nombre = "Capuchino", Precio = 45 },
-    new Producto { Id = 3, Nombre = "Burrito de machaca", Precio = 60 },
-    new Producto { Id = 4, Nombre = "Coyota", Precio = 25 }
-};
-var siguienteId = 5;
+    var db = scope.ServiceProvider.GetRequiredService<MenuDb>();
+    await db.Database.EnsureCreatedAsync();
+}
 
 app.MapGet("/", () => "Menú de la cafetería");
 
-app.MapGet("/productos", () => productos);
+app.MapGet("/productos", async (MenuDb db) => await db.Productos.ToListAsync());
 
-app.MapGet("/productos/{id}", (int id) =>
+app.MapGet("/productos/{id}", async (int id, MenuDb db) =>
 {
-    var producto = productos.Find(p => p.Id == id);
+    var producto = await db.Productos.FindAsync(id);
     return producto is null ? Results.NotFound() : Results.Ok(producto);
 });
 
-app.MapPost("/productos", (Producto nuevo) =>
+app.MapPost("/productos", async (Producto nuevo, MenuDb db) =>
 {
     if (string.IsNullOrWhiteSpace(nuevo.Nombre) || nuevo.Precio <= 0)
         return Results.BadRequest(new { error = "Falta el nombre o el precio no es válido" });
 
-    nuevo.Id = siguienteId++;
-    productos.Add(nuevo);
+    db.Productos.Add(nuevo);
+    await db.SaveChangesAsync();
     return Results.Created($"/productos/{nuevo.Id}", nuevo);
 });
 
-app.MapDelete("/productos/{id}", (int id) =>
+app.MapDelete("/productos/{id}", async (int id, MenuDb db) =>
 {
-    var producto = productos.Find(p => p.Id == id);
+    var producto = await db.Productos.FindAsync(id);
     if (producto is null) return Results.NotFound();
 
-    productos.Remove(producto);
+    db.Productos.Remove(producto);
+    await db.SaveChangesAsync();
     return Results.NoContent();
 });
 
@@ -46,5 +51,24 @@ class Producto
 {
     public int Id { get; set; }
     public string Nombre { get; set; } = "";
+
+    [Precision(10, 2)]
     public decimal Precio { get; set; }
+}
+
+// La base de datos del menú. Cada DbSet es una tabla.
+class MenuDb(DbContextOptions<MenuDb> opciones) : DbContext(opciones)
+{
+    public DbSet<Producto> Productos => Set<Producto>();
+
+    // Los productos con los que arranca la tabla
+    protected override void OnModelCreating(ModelBuilder modelo)
+    {
+        modelo.Entity<Producto>().HasData(
+            new Producto { Id = 1, Nombre = "Café americano", Precio = 30 },
+            new Producto { Id = 2, Nombre = "Capuchino", Precio = 45 },
+            new Producto { Id = 3, Nombre = "Burrito de machaca", Precio = 60 },
+            new Producto { Id = 4, Nombre = "Coyota", Precio = 25 }
+        );
+    }
 }

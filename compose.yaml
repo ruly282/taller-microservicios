@@ -1,0 +1,13 @@
+services:
+  # SQL Server en un contenedor. Ahí van la base del menú y la de pedidos.
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: TallerCafe_2026
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P TallerCafe_2026 -C -Q "SELECT 1"
+      interval: 5s
+      retries: 30
